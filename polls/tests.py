@@ -11,7 +11,7 @@ class QuesitonModelTests(TestCase):
 
     def test_was_published_recently_with_future_question(self):
         time = timezone.now() + datetime.timedelta(days=30)
-        future_question = Question(pub_date = time)
+        future_question = Question(pub_date=time)
 
         self.assertIs(future_question.was_published_recently(), False)
 
@@ -25,6 +25,7 @@ class QuesitonModelTests(TestCase):
         recent_qustion = Question(pub_date=time)
         self.assertIs(recent_qustion.was_published_recently(), True)
 
+
 def create_question(question_text, days):
     time = timezone.now() + datetime.timedelta(days=days)
     return Question.objects.create(question_text=question_text, pub_date=time)
@@ -34,7 +35,7 @@ class QuestionIndexViewTests(TestCase):
     def test_no_questions(self):
         response = self.client.get(reverse("polls:index"))
         self.assertEquals(response.status_code, 200)
-        self.assertContext(response, "No polls are available.")
+        self.assertContains(response, "No polls are available.")
         self.assertQuerysetEqual(
             response.context["latest_question_list"],
             []
@@ -47,7 +48,7 @@ class QuestionIndexViewTests(TestCase):
             response.context["latest_question_list"],
             ["<Question: Past question.>"]
         )
-        self.assertQuerysetEqual(response.contex["latest_question_list"], [])
+        self.assertQuerysetEqual(response.context["latest_question_list"], [])
 
     def test_future_question_and_past_question(self):
         create_question(question_text="Past question.", days=-30)
@@ -66,3 +67,17 @@ class QuestionIndexViewTests(TestCase):
             response.context["latest_question_list"],
             ["<Question: Past question 2.>", "<Question: Past question 1.>"]
         )
+
+class QuestionDetailViewTests(TestCase):
+    def test_future_question(self):
+        future_question = create_question(question_text="Future question", days=5)
+        url = reverse("polls:detail", args=(future_question.id,))
+        response = self.crient.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        def test_past_question(self):
+            past_question = create_question(question_text="Past Question.", days=-5)
+            url = reverse("polls:detail", args=(past_question.id))
+            response = self.client.get(url)
+            self.assertContains(response,past_question.question_text)
+
